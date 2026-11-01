@@ -1,0 +1,2679 @@
+<!-- Output: html -->
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>空飛ぶフランスパン - L'Odyssée de la Baguette</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #05070a;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  #ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+  }
+  .hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .hud-top.visible {
+    opacity: 1;
+  }
+  .hud-card {
+    background: rgba(12, 18, 28, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 12px 18px;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    min-width: 150px;
+  }
+  .hud-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 235, 200, 0.75);
+    margin-bottom: 4px;
+  }
+  .hud-value {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .bar-container {
+    width: 100%;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #e09f3e, #fff3b0);
+    border-radius: 4px;
+    transition: width 0.15s ease-out;
+  }
+  #jam-gauge-wrap {
+    margin-top: 8px;
+    display: none;
+  }
+  #jam-bar {
+    background: linear-gradient(90deg, #ff2a5f, #ff9ebb, #ffd166);
+    box-shadow: 0 0 10px #ff2a5f;
+  }
+  .overlay-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, rgba(15,20,30,0.4) 0%, rgba(5,8,14,0.85) 100%);
+    pointer-events: auto;
+    transition: opacity 0.7s ease;
+    text-align: center;
+    padding: 24px;
+  }
+  .overlay-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .title-main {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: clamp(32px, 6vw, 64px);
+    color: #fff8eb;
+    letter-spacing: 3px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.8), 0 0 40px rgba(235, 168, 68, 0.4);
+    margin-bottom: 8px;
+  }
+  .title-sub {
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: clamp(14px, 2.2vw, 20px);
+    color: #e6c28b;
+    margin-bottom: 28px;
+    letter-spacing: 1.5px;
+  }
+  .desc-box {
+    max-width: 520px;
+    background: rgba(20, 25, 35, 0.65);
+    border: 1px solid rgba(255, 225, 180, 0.25);
+    border-radius: 14px;
+    padding: 18px 24px;
+    color: #e8eef5;
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 32px;
+    backdrop-filter: blur(6px);
+  }
+  .btn-primary {
+    pointer-events: auto;
+    cursor: pointer;
+    font-family: 'Georgia', serif;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #2b1806;
+    background: linear-gradient(135deg, #f9d99a 0%, #d99338 50%, #b86b19 100%);
+    border: 2px solid #fff2d6;
+    border-radius: 50px;
+    padding: 15px 46px;
+    box-shadow: 0 10px 30px rgba(217, 147, 56, 0.45), inset 0 2px 4px rgba(255,255,255,0.7);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 14px 36px rgba(217, 147, 56, 0.65), inset 0 2px 6px rgba(255,255,255,0.9);
+  }
+  .btn-primary:active {
+    transform: translateY(1px) scale(0.98);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui-layer">
+  <div class="hud-top" id="hud">
+    <div class="hud-card">
+      <div class="hud-label">Altitude / 高度</div>
+      <div class="hud-value"><span id="alt-val">0</span> <small style="font-size:14px;font-weight:normal;">/ 3000m</small></div>
+      <div class="bar-container">
+        <div class="bar-fill" id="alt-bar" style="width:0%; background: linear-gradient(90deg, #4ea8de, #80ffdb);"></div>
+      </div>
+    </div>
+
+    <div class="hud-card">
+      <div class="hud-label">Baguette / 残りパン</div>
+      <div class="hud-value"><span id="bread-val">100</span>%</div>
+      <div class="bar-container">
+        <div class="bar-fill" id="bread-bar" style="width:100%;"></div>
+      </div>
+      <div id="jam-gauge-wrap">
+        <div class="hud-label" style="color:#ff9ebb; margin-top:4px;">Jam Coating / 無敵</div>
+        <div class="bar-container">
+          <div class="bar-fill" id="jam-bar" style="width:100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- タイトル画面 -->
+<div class="overlay-screen" id="start-screen">
+  <h1 class="title-main">空飛ぶフランスパン</h1>
+  <div class="title-sub">L'Odyssée de la Baguette Volante</div>
+  <div class="desc-box">
+    焼きたてのバゲットとなって大空へ昇りつめよう。<br>
+    カラスや飛行機に齧られるとパンが欠けて小さくなりますが、<br>
+    <strong>軽くなるほど移動速度と旋回性能がアップ</strong>します。<br>
+    ジャム瓶を取るとツヤツヤの無敵コーティング状態に！<br>
+    <span style="font-size:12px; color:#f3c687;">【操作】マウス移動 / タッチドラッグ / WASD・矢印キー</span>
+  </div>
+  <button class="btn-primary" id="start-btn">大空へ飛び立つ</button>
+</div>
+
+<!-- ゲームオーバー画面 -->
+<div class="overlay-screen hidden" id="gameover-screen">
+  <h1 class="title-main" style="color:#ff8a8a;">完食されてしまった…</h1>
+  <div class="title-sub">La Baguette a disparu dans le ciel</div>
+  <div class="desc-box" id="gameover-stats">
+    到達高度: 0 m
+  </div>
+  <button class="btn-primary" id="retry-btn">もう一度焼く</button>
+</div>
+
+<!-- クリア画面 -->
+<div class="overlay-screen hidden" id="clear-screen">
+  <h1 class="title-main" style="font-size:clamp(42px, 8vw, 84px); letter-spacing:10px;">CLEAR</h1>
+  <div class="title-sub">Fin du Voyage — 空から大地へ還るパンの物語</div>
+  <div class="desc-box">
+    成層圏まで昇りつめたフランスパンは、<br>
+    時の巻き戻りとともに地上の鳩たちへ受け継がれました。
+  </div>
+  <button class="btn-primary" id="replay-btn">もう一度遊ぶ</button>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * 1. ゲーム定数・設定 (CONFIG)
+ * ============================================================================
+ */
+const CONFIG = {
+  TARGET_ALTITUDE: 3000,         // クリア目標高度 (m)
+  BASE_CLIMB_SPEED: 88,          // 基本上昇速度 (m/s)
+  BREAD_WIDTH: 74,               // パンの描画幅 (px)
+  BREAD_HEIGHT: 290,             // パンの描画長 (px)
+  MIN_BREAD_PERCENT: 3.5,        // ゲームオーバーになる残量閾値 (%)
+  BASE_FOLLOW_SPEED: 7.5,        // 基本追従スピード
+  MAX_LIGHT_BOOST: 2.35,         // パンが小さくなった際の最大機動力倍率
+  JAM_DURATION: 8.5,             // ジャム無敵時間 (秒)
+  CROW_BITE_RADIUS: 22,          // カラスの齧り半径 (px)
+  PLANE_BITE_RADIUS: 44,         // 飛行機の削り半径 (px)
+  CREDITS_DURATION: 14.5,        // エンドロールが流れてから急降下が始まるまでの秒数
+  REWIND_DURATION: 6.5,          // 時間逆行・急降下の秒数
+  CLOUD_COUNT: 22                // 雲の同時存在数
+};
+
+/**
+ * ============================================================================
+ * 2. 数学・ノイズユーティリティ (Noise & Math)
+ * ============================================================================
+ */
+class ProceduralNoise {
+  constructor(seed = 1337) {
+    this.p = new Uint8Array(512);
+    let s = seed;
+    const perm = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) perm[i] = i;
+    for (let i = 255; i > 0; i--) {
+      s = (s * 16807) % 2147483647;
+      const j = s % (i + 1);
+      const tmp = perm[i];
+      perm[i] = perm[j];
+      perm[j] = tmp;
+    }
+    for (let i = 0; i < 512; i++) this.p[i] = perm[i & 255];
+  }
+  fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+  lerp(t, a, b) { return a + t * (b - a); }
+  grad(hash, x, y) {
+    const h = hash & 7;
+    const u = h < 4 ? x : y;
+    const v = h < 4 ? y : x;
+    return ((h & 1) ? -u : u) + ((h & 2) ? -2.0 * v : 2.0 * v);
+  }
+  noise2D(x, y) {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    x -= Math.floor(x);
+    y -= Math.floor(y);
+    const u = this.fade(x);
+    const v = this.fade(y);
+    const A = this.p[X] + Y;
+    const B = this.p[X + 1] + Y;
+    const res = this.lerp(v,
+      this.lerp(u, this.grad(this.p[A], x, y), this.grad(this.p[B], x - 1, y)),
+      this.lerp(u, this.grad(this.p[A + 1], x, y - 1), this.grad(this.p[B + 1], x - 1, y - 1))
+    );
+    return (res + 1) * 0.5;
+  }
+  fbm(x, y, octaves = 4) {
+    let val = 0;
+    let amp = 0.5;
+    let freq = 1;
+    let max = 0;
+    for (let i = 0; i < octaves; i++) {
+      val += this.noise2D(x * freq, y * freq) * amp;
+      max += amp;
+      freq *= 2.02;
+      amp *= 0.5;
+    }
+    return val / max;
+  }
+}
+
+const NOISE = new ProceduralNoise(42);
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/**
+ * ============================================================================
+ * 3. Web Audio API 音響シンセサイザー (AudioManager)
+ * ============================================================================
+ */
+class AudioManager {
+  constructor() {
+    this.ctx = null;
+    this.masterGain = null;
+    this.noiseBuffer = null;
+    this.bgmTimer = null;
+    this.isPlayingBGM = false;
+    this.bgmStep = 0;
+    this.rewindMode = false;
+  }
+
+  init() {
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return;
+    }
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioCtx();
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0.35;
+    this.masterGain.connect(this.ctx.destination);
+
+    // ホワイトノイズバッファ生成（パンの咀嚼音・風切り音用）
+    const sr = this.ctx.sampleRate;
+    this.noiseBuffer = this.ctx.createBuffer(1, sr * 1.5, sr);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+  }
+
+  // パリッ！ザクッ！というリアルなフランスパン咀嚼音
+  playCrunch(isLarge = false) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const bursts = isLarge ? 5 : 3;
+    for (let i = 0; i < bursts; i++) {
+      const t = now + i * 0.038;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100 + Math.random() * 1400, t);
+      filter.Q.value = 2.4;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(isLarge ? 0.55 : 0.35, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      src.start(t);
+      src.stop(t + 0.1);
+    }
+  }
+
+  // カラスの鳴き声 (カァー！)
+  playCrowCaw() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const mod = this.ctx.createOscillator();
+    const modGain = this.ctx.createGain();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(640, now);
+    osc.frequency.linearRampToValueAtTime(520, now + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(310, now + 0.32);
+
+    // 声帯のガラガラ感（FM変調）
+    mod.type = 'square';
+    mod.frequency.value = 48;
+    modGain.gain.value = 85;
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+
+    mod.connect(modGain);
+    modGain.connect(osc.frequency);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(now);
+    mod.start(now);
+    osc.stop(now + 0.35);
+    mod.stop(now + 0.35);
+  }
+
+  // 羽ばたき音・鳩の飛び立ち音
+  playFlap(pitch = 300) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(pitch, now);
+    filter.frequency.exponentialRampToValueAtTime(120, now + 0.11);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.16, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    src.start(now);
+    src.stop(now + 0.13);
+  }
+
+  // 飛行機のドップラー通過音
+  playAirplanePass(isJet = true) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const dur = isJet ? 1.8 : 2.2;
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    src.loop = true;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    // ドップラー効果: 高音から低音へスイープ
+    filter.frequency.setValueAtTime(isJet ? 950 : 420, now);
+    filter.frequency.exponentialRampToValueAtTime(isJet ? 220 : 130, now + dur);
+    filter.Q.value = isJet ? 1.8 : 4.0;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.32, now + dur * 0.42);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    src.start(now);
+    src.stop(now + dur);
+  }
+
+  // ジャム取得キラキラ音
+  playJamPowerup() {
+    if (!this.ctx) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];
+    const now = this.ctx.currentTime;
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.055);
+      gain.gain.setValueAtTime(0.001, now + i * 0.055);
+      gain.gain.linearRampToValueAtTime(0.22, now + i * 0.055 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.35);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now + i * 0.055);
+      osc.stop(now + i * 0.055 + 0.36);
+    });
+  }
+
+  // 無敵時の敵弾き飛ばし音
+  playBoing() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.21);
+  }
+
+  // 時間巻き戻しサウンド
+  playRewindSweep() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + CONFIG.REWIND_DURATION);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 600;
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + CONFIG.REWIND_DURATION);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + CONFIG.REWIND_DURATION);
+  }
+
+  startBGM() {
+    this.init();
+    if (this.isPlayingBGM) return;
+    this.isPlayingBGM = true;
+    this.rewindMode = false;
+
+    // フランス風ミュゼット・爽やかなワルツ風コード進行
+    const scale = [
+      261.63, 329.63, 392.00, 493.88,
+      293.66, 349.23, 440.00, 523.25,
+      392.00, 493.88, 587.33, 659.25,
+      261.63, 329.63, 392.00, 523.25
+    ];
+
+    this.bgmTimer = setInterval(() => {
+      if (!this.ctx || !this.isPlayingBGM) return;
+      const now = this.ctx.currentTime;
+      const idx = this.rewindMode
+        ? (scale.length - 1 - (this.bgmStep % scale.length))
+        : (this.bgmStep % scale.length);
+
+      let freq = scale[idx];
+      if (this.rewindMode) {
+        freq *= 0.85 + Math.sin(this.bgmStep * 0.7) * 0.15; // 逆再生の揺らぎ
+      }
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = this.rewindMode ? 'sawtooth' : 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(this.rewindMode ? 0.08 : 0.11, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.25);
+
+      this.bgmStep++;
+    }, 190);
+  }
+
+  stopBGM() {
+    this.isPlayingBGM = false;
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+}
+
+const AUDIO = new AudioManager();
+
+/**
+ * ============================================================================
+ * 4. 超リアル・プロシージャル・フランスパン (Baguette)
+ * ============================================================================
+ */
+class Baguette {
+  constructor() {
+    this.w = CONFIG.BREAD_WIDTH;
+    this.h = CONFIG.BREAD_HEIGHT;
+
+    // 4枚のオフスクリーンCanvasでリアルな皮・中身・マスク・合成結果を保持
+    this.crustCanvas = document.createElement('canvas');
+    this.crumbCanvas = document.createElement('canvas');
+    this.maskCanvas = document.createElement('canvas');
+    this.renderCanvas = document.createElement('canvas');
+
+    [this.crustCanvas, this.crumbCanvas, this.maskCanvas, this.renderCanvas].forEach(c => {
+      c.width = this.w;
+      c.height = this.h;
+    });
+
+    this.x = window.innerWidth * 0.5;
+    this.y = window.innerHeight * 0.68;
+    this.vx = 0;
+    this.vy = 0;
+    this.angle = 0;
+
+    this.initialPixels = 1;
+    this.remainingPercent = 100;
+    this.maskData = null;
+
+    this.jamTime = 0;
+    this.jamColor = '#ff1e56';
+
+    this.generateBaseTextures();
+    this.reset();
+  }
+
+  // バゲットのベース形状パスを作成
+  traceShapePath(ctx, inset = 0) {
+    const w = this.w - inset * 2;
+    const h = this.h - inset * 2;
+    const cx = this.w * 0.5;
+    const topY = inset + 8;
+    const botY = this.h - inset - 8;
+    const rx = w * 0.44;
+
+    ctx.beginPath();
+    ctx.moveTo(cx - rx, topY + rx * 1.3);
+    // 先端の尖りぎみの丸み
+    ctx.quadraticCurveTo(cx - rx * 0.85, topY, cx, topY);
+    ctx.quadraticCurveTo(cx + rx * 0.85, topY, cx + rx, topY + rx * 1.3);
+    // 右側面（クープによる微妙な膨らみ波形）
+    const segs = 5;
+    const bodyH = (botY - rx * 1.3) - (topY + rx * 1.3);
+    for (let i = 0; i < segs; i++) {
+      const y1 = topY + rx * 1.3 + (bodyH * (i + 0.5)) / segs;
+      const y2 = topY + rx * 1.3 + (bodyH * (i + 1)) / segs;
+      ctx.quadraticCurveTo(cx + rx + 2.5, y1, cx + rx - 0.5, y2);
+    }
+    // 下端の丸み
+    ctx.quadraticCurveTo(cx + rx * 0.85, botY, cx, botY);
+    ctx.quadraticCurveTo(cx - rx * 0.85, botY, cx - rx, botY - rx * 1.3);
+    // 左側面
+    for (let i = segs - 1; i >= 0; i--) {
+      const y1 = topY + rx * 1.3 + (bodyH * (i + 0.5)) / segs;
+      const y2 = topY + rx * 1.3 + (bodyH * i) / segs;
+      ctx.quadraticCurveTo(cx - rx - 2.5, y1, cx - rx + 0.5, y2);
+    }
+    ctx.closePath();
+  }
+
+  // 1回だけ焼き皮（クラスト）と中身（クラム）の超高精細テクスチャを生成
+  generateBaseTextures() {
+    const w = this.w;
+    const h = this.h;
+
+    // 1. クラム（気泡の入った白〜クリーム色の断面テクスチャ）生成
+    const crumbCtx = this.crumbCanvas.getContext('2d');
+    const crumbImg = crumbCtx.createImageData(w, h);
+    const cd = crumbImg.data;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const n1 = NOISE.fbm(x * 0.14, y * 0.14, 3);
+        const n2 = NOISE.noise2D(x * 0.38, y * 0.38);
+        const pore = NOISE.noise2D(x * 0.22 + 50, y * 0.22 + 50);
+
+        // クリーム色のベース
+        let r = 247, g = 236, b = 205;
+        // 気泡のくぼみ（暗い陰影）
+        if (pore < 0.34) {
+          const depth = (0.34 - pore) / 0.34;
+          r -= depth * 85;
+          g -= depth * 88;
+          b -= depth * 92;
+        } else if (n2 < 0.38) {
+          const d2 = (0.38 - n2) / 0.38;
+          r -= d2 * 45;
+          g -= d2 * 48;
+          b -= d2 * 52;
+        } else {
+          // ふわっとしたハイライト
+          r += (n1 - 0.5) * 24;
+          g += (n1 - 0.5) * 22;
+          b += (n1 - 0.5) * 18;
+        }
+
+        cd[idx]     = clamp(r, 0, 255);
+        cd[idx + 1] = clamp(g, 0, 255);
+        cd[idx + 2] = clamp(b, 0, 255);
+        cd[idx + 3] = 255;
+      }
+    }
+    crumbCtx.putImageData(crumbImg, 0, 0);
+
+    // 2. クラスト（こんがり焼けた皮＋クープ＋粉化粧）生成
+    const crustCtx = this.crustCanvas.getContext('2d');
+    const crustImg = crustCtx.createImageData(w, h);
+    const kData = crustImg.data;
+    const cx = w * 0.5;
+    const rx = w * 0.44;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        // 円筒形の立体法線ベクトル風陰影 (-1 〜 +1)
+        const nx = (x - cx) / rx;
+        const cyl = Math.sqrt(Math.max(0, 1 - nx * nx));
+
+        const nCrust = NOISE.fbm(x * 0.12, y * 0.08, 4);
+        const micro = NOISE.noise2D(x * 0.65, y * 0.65);
+        const flour = NOISE.fbm(x * 0.09 + 120, y * 0.09 + 120, 3);
+
+        // 黄金色〜こんがり茶色のベースグラデーション
+        let r = 198 * cyl + 42 * nCrust;
+        let g = 118 * cyl + 32 * nCrust;
+        let b = 38  * cyl + 16 * nCrust;
+
+        // 左上からの太陽光スペキュラ＆ハイライト
+        const light = Math.max(0, (1 - Math.abs(nx + 0.28)) * cyl);
+        r += Math.pow(light, 2.2) * 58;
+        g += Math.pow(light, 2.2) * 42;
+        b += Math.pow(light, 2.5) * 18;
+
+        // 表面のパリパリ気泡の微細凹凸
+        r += (micro - 0.5) * 26;
+        g += (micro - 0.5) * 20;
+        b += (micro - 0.5) * 12;
+
+        // 小麦粉の白い粉化粧（主に側面や盛り上がり部分に残る）
+        const flourAmount = Math.max(0, (flour - 0.54) * 2.4) * (0.4 + 0.6 * Math.abs(nx));
+        if (flourAmount > 0) {
+          r = lerp(r, 248, clamp(flourAmount, 0, 0.78));
+          g = lerp(g, 242, clamp(flourAmount, 0, 0.78));
+          b = lerp(b, 230, clamp(flourAmount, 0, 0.78));
+        }
+
+        kData[idx]     = clamp(r, 0, 255);
+        kData[idx + 1] = clamp(g, 0, 255);
+        kData[idx + 2] = clamp(b, 0, 255);
+        kData[idx + 3] = 255;
+      }
+    }
+    crustCtx.putImageData(crustImg, 0, 0);
+
+    // 3. クープ（斜めの切れ込みと焼き割れ・エッジの焦げ目）を描画
+    const coupeCount = 5;
+    const startY = 36;
+    const spacing = (h - 86) / coupeCount;
+
+    for (let i = 0; i < coupeCount; i++) {
+      const cy = startY + i * spacing + 18;
+      crustCtx.save();
+      crustCtx.translate(cx, cy);
+      crustCtx.rotate(-0.48); // 斜めのクープ角度
+
+      // クープ周囲の焦げた盛り上がり（エッジのグignette）
+      const gradOuter = crustCtx.createRadialGradient(0, 0, 2, 0, 0, 26);
+      gradOuter.addColorStop(0, '#f4d58d');
+      gradOuter.addColorStop(0.55, '#c87d28');
+      gradOuter.addColorStop(0.85, '#5c2606');
+      gradOuter.addColorStop(1, 'rgba(92,38,6,0)');
+
+      crustCtx.fillStyle = gradOuter;
+      crustCtx.beginPath();
+      crustCtx.ellipse(0, 0, 14, 27, 0, 0, Math.PI * 2);
+      crustCtx.fill();
+
+      // 割れて露出した黄金色の内層
+      const gradInner = crustCtx.createLinearGradient(-10, 0, 10, 0);
+      gradInner.addColorStop(0, '#8a3b08');
+      gradInner.addColorStop(0.25, '#e8a846');
+      gradInner.addColorStop(0.6, '#fae39c');
+      gradInner.addColorStop(1, '#9c470b');
+
+      crustCtx.fillStyle = gradInner;
+      crustCtx.beginPath();
+      crustCtx.ellipse(0, 0, 8.5, 22, 0, 0, Math.PI * 2);
+      crustCtx.fill();
+
+      // 焼き割れの繊維質ライン
+      crustCtx.strokeStyle = 'rgba(255, 248, 220, 0.45)';
+      crustCtx.lineWidth = 1.1;
+      for (let s = -14; s <= 14; s += 4) {
+        crustCtx.beginPath();
+        crustCtx.moveTo(-5, s);
+        crustCtx.quadraticCurveTo(0, s - 2, 6, s + 1);
+        crustCtx.stroke();
+      }
+
+      // クープ左縁の立ち上がりエッジ（濃い焦げ茶色）
+      crustCtx.strokeStyle = '#3d1502';
+      crustCtx.lineWidth = 2.2;
+      crustCtx.beginPath();
+      crustCtx.arc(2, 0, 9.5, Math.PI * 0.65, Math.PI * 1.35);
+      crustCtx.stroke();
+
+      crustCtx.restore();
+    }
+  }
+
+  // パンの形状マスクを初期状態（100%無傷）へリセット
+  reset() {
+    const mCtx = this.maskCanvas.getContext('2d');
+    mCtx.clearRect(0, 0, this.w, this.h);
+    mCtx.fillStyle = '#ffffff';
+    this.traceShapePath(mCtx, 2);
+    mCtx.fill();
+
+    const img = mCtx.getImageData(0, 0, this.w, this.h).data;
+    let count = 0;
+    for (let i = 3; i < img.length; i += 4) {
+      if (img[i] > 128) count++;
+    }
+    this.initialPixels = Math.max(1, count);
+    this.remainingPercent = 100;
+    this.jamTime = 0;
+    this.angle = 0;
+    this.rebuildRenderCanvas();
+  }
+
+  // マスクとベーステクスチャを合成して「齧られた断面のクラム＋焼き皮の厚み」を再構築
+  rebuildRenderCanvas() {
+    const rCtx = this.renderCanvas.getContext('2d');
+    const mCtx = this.maskCanvas.getContext('2d');
+    const w = this.w;
+    const h = this.h;
+
+    rCtx.clearRect(0, 0, w, h);
+
+    // ステップ1: 現在のマスクの形状で「焼き皮（クラスト）」を切り抜く
+    rCtx.save();
+    rCtx.drawImage(this.maskCanvas, 0, 0);
+    rCtx.globalCompositeOperation = 'source-in';
+    rCtx.drawImage(this.crustCanvas, 0, 0);
+    rCtx.restore();
+
+    // ステップ2: ピクセルデータを走査し、残存率計算と「齧られた断面（クラム露出部）」を描画
+    const maskImg = mCtx.getImageData(0, 0, w, h);
+    this.maskData = maskImg.data;
+    const renderImg = rCtx.getImageData(0, 0, w, h);
+    const rData = renderImg.data;
+    const cData = this.crumbCanvas.getContext('2d').getImageData(0, 0, w, h).data;
+
+    // 初期のパン外周からの距離ではなく、「後から削られた欠損部」の周囲に白いクラム層を露出させる
+    let solidPixels = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        if (this.maskData[idx + 3] > 128) {
+          solidPixels++;
+        }
+      }
+    }
+
+    this.remainingPercent = clamp((solidPixels / this.initialPixels) * 100, 0, 100);
+    rCtx.putImageData(renderImg, 0, 0);
+  }
+
+  // ワールド座標 (wx, wy) に歯形・くちばし形のリアルな欠け目を刻む
+  biteAtWorld(wx, wy, radius, particleSystem) {
+    // パンのローカル座標へ逆変換
+    const dx = wx - this.x;
+    const dy = wy - this.y;
+    const cos = Math.cos(-this.angle);
+    const sin = Math.sin(-this.angle);
+    const lx = dx * cos - dy * sin + this.w * 0.5;
+    const ly = dx * sin + dy * cos + this.h * 0.5;
+
+    const mCtx = this.maskCanvas.getContext('2d');
+    const crustCtx = this.crustCanvas.getContext('2d');
+    const crumbPattern = crustCtx.createPattern(this.crumbCanvas, 'no-repeat');
+
+    // 1. まず欠ける境界の外側に「露出した白い中身（クラム）と焦げ皮の縁」を焼き込む
+    crustCtx.save();
+    // 茶色い皮の断面縁（厚さ2.5px）
+    crustCtx.fillStyle = '#7c3f10';
+    this.drawToothMarks(crustCtx, lx, ly, radius + 7.5, 9);
+    crustCtx.fill();
+
+    // ふわっとした気泡入りクラムの露出断面
+    crustCtx.fillStyle = crumbPattern;
+    this.drawToothMarks(crustCtx, lx, ly, radius + 5.2, 9);
+    crustCtx.fill();
+    crustCtx.restore();
+
+    // 2. マスクを `destination-out` で実際に削り取る
+    mCtx.save();
+    mCtx.globalCompositeOperation = 'destination-out';
+    mCtx.fillStyle = '#000';
+    this.drawToothMarks(mCtx, lx, ly, radius, 9);
+    mCtx.fill();
+    mCtx.restore();
+
+    // 3. 合成Canvasを更新
+    this.rebuildRenderCanvas();
+
+    // 4. パンくずパーティクルを大量放出
+    if (particleSystem) {
+      const count = Math.floor(radius * 0.95);
+      for (let i = 0; i < count; i++) {
+        particleSystem.spawnCrumb(wx, wy, radius > 30);
+      }
+    }
+  }
+
+  // 本物の歯形・くちばし跡のような不規則なスカラップ半円弧を描く
+  drawToothMarks(ctx, cx, cy, radius, lobes = 8) {
+    ctx.beginPath();
+    for (let i = 0; i < lobes; i++) {
+      const ang = (i / lobes) * Math.PI * 2;
+      const dist = radius * (0.42 + NOISE.noise2D(cx * 0.1 + i * 2.1, cy * 0.1) * 0.38);
+      const tx = cx + Math.cos(ang) * dist;
+      const ty = cy + Math.sin(ang) * dist;
+      const tr = radius * (0.38 + (i % 2) * 0.12);
+      ctx.moveTo(tx + tr, ty);
+      ctx.arc(tx, ty, tr, 0, Math.PI * 2);
+    }
+  }
+
+  // ワールド座標 (wx, wy) 周辺にパンの実ピクセルが存在するか判定（実際の残り形状に連動）
+  checkCollisionCircle(wx, wy, r) {
+    if (!this.maskData) return { hit: false };
+    const dx = wx - this.x;
+    const dy = wy - this.y;
+    // 大まかなバウンディング判定
+    const maxR = Math.max(this.w, this.h) * 0.6 + r;
+    if (dx * dx + dy * dy > maxR * maxR) return { hit: false };
+
+    const cos = Math.cos(-this.angle);
+    const sin = Math.sin(-this.angle);
+    const lx = dx * cos - dy * sin + this.w * 0.5;
+    const ly = dx * sin + dy * cos + this.h * 0.5;
+
+    // 中心および周囲8サンプル点をチェック
+    const samples = 8;
+    for (let s = 0; s <= samples; s++) {
+      const ang = (s / samples) * Math.PI * 2;
+      const rad = s === 0 ? 0 : r * 0.65;
+      const sx = Math.floor(lx + Math.cos(ang) * rad);
+      const sy = Math.floor(ly + Math.sin(ang) * rad);
+      if (sx >= 0 && sx < this.w && sy >= 0 && sy < this.h) {
+        const alpha = this.maskData[(sy * this.w + sx) * 4 + 3];
+        if (alpha > 128) {
+          // 衝突した実ワールド座標を返す
+          const hitWX = this.x + (sx - this.w * 0.5) * Math.cos(this.angle) - (sy - this.h * 0.5) * Math.sin(this.angle);
+          const hitWY = this.y + (sx - this.w * 0.5) * Math.sin(this.angle) + (sy - this.h * 0.5) * Math.cos(this.angle);
+          return { hit: true, x: hitWX, y: hitWY };
+        }
+      }
+    }
+    return { hit: false };
+  }
+
+  // 齧られて小さくなるほど軽くなり、移動速度と旋回性能がアップする物理更新
+  update(dt, input, canvasW, canvasH) {
+    const massRatio = clamp(this.remainingPercent / 100, 0.05, 1.0);
+    // 軽いほど 1.0 -> MAX_LIGHT_BOOST (2.35倍) へ機動力上昇
+    const agility = lerp(CONFIG.MAX_LIGHT_BOOST, 1.0, Math.pow(massRatio, 0.65));
+
+    if (input.hasKeyInput) {
+      const keySpeed = 390 * agility;
+      input.targetX = clamp(this.x + input.kx * keySpeed * dt, 40, canvasW - 40);
+      input.targetY = clamp(this.y + input.ky * keySpeed * dt, 70, canvasH - 70);
+    }
+
+    const follow = CONFIG.BASE_FOLLOW_SPEED * agility;
+    const prevX = this.x;
+    const prevY = this.y;
+
+    this.x = lerp(this.x, clamp(input.targetX, 36, canvasW - 36), clamp(follow * dt, 0, 1));
+    this.y = lerp(this.y, clamp(input.targetY, 60, canvasH - 60), clamp(follow * dt, 0, 1));
+
+    this.vx = (this.x - prevX) / Math.max(dt, 0.001);
+    this.vy = (this.y - prevY) / Math.max(dt, 0.001);
+
+    // 水平速度に応じて機敏に傾く（軽いほど旋回角レスポンスも鋭い）
+    const targetAngle = clamp(this.vx * 0.00095 * Math.sqrt(agility), -0.62, 0.62);
+    this.angle = lerp(this.angle, targetAngle, clamp(10 * agility * dt, 0, 1));
+
+    if (this.jamTime > 0) {
+      this.jamTime = Math.max(0, this.jamTime - dt);
+    }
+  }
+
+  draw(ctx, time, scale = 1) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.scale(scale, scale);
+
+    // ドロップシャドウで立体感を強調
+    ctx.shadowColor = 'rgba(15, 8, 2, 0.42)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetX = 6;
+    ctx.shadowOffsetY = 10;
+
+    ctx.drawImage(this.renderCanvas, -this.w * 0.5, -this.h * 0.5);
+
+    ctx.shadowColor = 'transparent';
+
+    // ジャム無敵コーティング中のツヤツヤ光沢＆キラキラ演出
+    if (this.jamTime > 0) {
+      ctx.save();
+      // パンの残り形状にだけジャムグロスを重ねる
+      ctx.beginPath();
+      ctx.rect(-this.w * 0.5, -this.h * 0.5, this.w, this.h);
+      ctx.clip();
+
+      // 半透明のベリージャム被膜
+      ctx.globalCompositeOperation = 'source-atop';
+      const jamGrad = ctx.createLinearGradient(-this.w * 0.5, -this.h * 0.5, this.w * 0.5, this.h * 0.5);
+      jamGrad.addColorStop(0, this.jamColor === 'strawberry' ? 'rgba(255, 25, 80, 0.48)' : 'rgba(110, 35, 215, 0.48)');
+      jamGrad.addColorStop(0.5, 'rgba(255, 210, 230, 0.55)');
+      jamGrad.addColorStop(1, this.jamColor === 'strawberry' ? 'rgba(210, 10, 55, 0.52)' : 'rgba(65, 15, 155, 0.52)');
+      ctx.fillStyle = jamGrad;
+      ctx.fillRect(-this.w * 0.5, -this.h * 0.5, this.w, this.h);
+
+      // 流れるツヤハイライト（スペキュラリボン）
+      const shimmerY = ((time * 220) % (this.h * 1.6)) - this.h * 0.8;
+      const glossGrad = ctx.createLinearGradient(-this.w, shimmerY - 35, this.w, shimmerY + 35);
+      glossGrad.addColorStop(0, 'rgba(255,255,255,0)');
+      glossGrad.addColorStop(0.5, 'rgba(255,255,255,0.72)');
+      glossGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = glossGrad;
+      ctx.fillRect(-this.w * 0.5, -this.h * 0.5, this.w, this.h);
+      ctx.restore();
+
+      // 周囲に輝くスパークル星
+      for (let i = 0; i < 6; i++) {
+        const pulse = Math.sin(time * 7 + i * 1.7);
+        if (pulse > 0.1) {
+          const sx = Math.cos(i * 2.4 + time * 1.5) * (this.w * 0.52);
+          const sy = Math.sin(i * 1.8 - time * 1.2) * (this.h * 0.44);
+          const sr = pulse * 7;
+          ctx.fillStyle = '#fffbe6';
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - sr);
+          ctx.quadraticCurveTo(sx, sy, sx + sr, sy);
+          ctx.quadraticCurveTo(sx, sy, sx, sy + sr);
+          ctx.quadraticCurveTo(sx, sy, sx - sr, sy);
+          ctx.quadraticCurveTo(sx, sy, sx, sy - sr);
+          ctx.fill();
+        }
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * ============================================================================
+ * 5. パーティクル・パンくずシステム (ParticleSystem)
+ * ============================================================================
+ */
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+  }
+
+  spawnCrumb(x, y, isLarge = false) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (isLarge ? 90 : 50) + Math.random() * 190;
+    const isCrust = Math.random() < 0.45;
+    this.particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 40,
+      size: (isLarge ? 3.5 : 2.2) + Math.random() * 4.5,
+      rot: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 14,
+      color: isCrust
+        ? (Math.random() < 0.5 ? '#b8681e' : '#854008')
+        : (Math.random() < 0.5 ? '#f5ebd1' : '#e6d2a2'),
+      life: 1.0,
+      decay: 0.75 + Math.random() * 0.6
+    });
+  }
+
+  spawnFeather(x, y) {
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 140;
+      this.particles.push({
+        type: 'feather',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 6 + Math.random() * 5,
+        rot: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 8,
+        color: '#1c2033',
+        life: 1.0,
+        decay: 0.65 + Math.random() * 0.4
+      });
+    }
+  }
+
+  update(dt, scrollSpeed) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx * dt;
+      p.y += (p.vy + scrollSpeed * 0.6) * dt;
+      p.vy += 260 * dt; // 重力
+      p.rot += p.vRot * dt;
+      p.life -= p.decay * dt;
+      if (p.life <= 0) {
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+
+  draw(ctx) {
+    for (const p of this.particles) {
+      ctx.save();
+      ctx.globalAlpha = clamp(p.life, 0, 1);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.type === 'feather') {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // 不規則なパンくずポリゴン
+        ctx.beginPath();
+        ctx.moveTo(-p.size, -p.size * 0.5);
+        ctx.lineTo(p.size * 0.8, -p.size * 0.9);
+        ctx.lineTo(p.size, p.size * 0.6);
+        ctx.lineTo(-p.size * 0.6, p.size * 0.8);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+/**
+ * ============================================================================
+ * 6. 環境・空・雲・地上レンダラー (Environment)
+ * ============================================================================
+ */
+class Environment {
+  constructor() {
+    this.cloudSprites = [];
+    this.clouds = [];
+    this.generateCloudSprites();
+  }
+
+  // フラクタルノイズでふわふわの立体雲スプライトを3種類キャッシュ生成
+  generateCloudSprites() {
+    for (let s = 0; s < 3; s++) {
+      const cw = 260;
+      const ch = 150;
+      const c = document.createElement('canvas');
+      c.width = cw;
+      c.height = ch;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(cw, ch);
+      const data = img.data;
+
+      const seedX = s * 100;
+      for (let y = 0; y < ch; y++) {
+        for (let x = 0; x < cw; x++) {
+          const nx = (x - cw * 0.5) / (cw * 0.46);
+          const ny = (y - ch * 0.54) / (ch * 0.42);
+          // 雲の楕円ドーム減衰
+          const dist = Math.sqrt(nx * nx + ny * ny);
+          if (dist >= 1.0) continue;
+
+          const falloff = Math.pow(1 - dist, 1.35);
+          const f = NOISE.fbm(x * 0.032 + seedX, y * 0.038 + seedX, 4);
+          const density = clamp((f * falloff - 0.16) * 2.3, 0, 1);
+
+          if (density > 0.01) {
+            // 上部は太陽光で白く輝き、下部は青みがかった立体陰影
+            const light = clamp(1 - (y / ch) * 0.6 + (f - 0.5) * 0.35, 0.62, 1.05);
+            const idx = (y * cw + x) * 4;
+            data[idx]     = clamp(248 * light, 0, 255);
+            data[idx + 1] = clamp(250 * light, 0, 255);
+            data[idx + 2] = clamp(255 * Math.min(1.02, light + 0.06), 0, 255);
+            data[idx + 3] = clamp(density * 225, 0, 225);
+          }
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      this.cloudSprites.push(c);
+    }
+  }
+
+  initClouds(w, h) {
+    this.clouds = [];
+    for (let i = 0; i < CONFIG.CLOUD_COUNT; i++) {
+      this.clouds.push(this.createCloud(w, Math.random() * h));
+    }
+  }
+
+  createCloud(w, y) {
+    const layer = Math.random(); // 0: 遠景, 1: 近景
+    return {
+      spriteIdx: Math.floor(Math.random() * this.cloudSprites.length),
+      x: Math.random() * w,
+      y: y,
+      vx: (Math.random() - 0.5) * 18,
+      dispX: 0,
+      dispY: 0,
+      scale: 0.65 + layer * 1.25,
+      parallax: 0.35 + layer * 0.95,
+      alpha: 0.42 + layer * 0.45
+    };
+  }
+
+  // 雲の視差スクロール＋パンや敵が通過した際に雲が割れて流れる流体風相互作用
+  updateClouds(dt, climbPixels, w, h, colliders) {
+    for (const c of this.clouds) {
+      c.y += climbPixels * c.parallax * dt;
+      c.x += c.vx * dt;
+
+      // パンや敵との距離に応じて雲が自然に押し退けられる
+      for (const col of colliders) {
+        const dx = (c.x + c.dispX) - col.x;
+        const dy = (c.y + c.dispY) - col.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = 110 * c.scale;
+        if (dist < minDist && dist > 1) {
+          const push = ((minDist - dist) / minDist) * 190 * dt;
+          c.dispX += (dx / dist) * push;
+          c.dispY += (dy / dist) * push * 0.4;
+        }
+      }
+
+      // 元の位置へ緩やかに 복원
+      c.dispX = lerp(c.dispX, 0, 1.5 * dt);
+      c.dispY = lerp(c.dispY, 0, 1.5 * dt);
+
+      if (c.y > h + 180) {
+        c.y = -160;
+        c.x = Math.random() * w;
+        c.dispX = 0;
+        c.dispY = 0;
+      } else if (c.y < -220) {
+        // 逆再生時用：上へ消えたら下から出現
+        c.y = h + 150;
+        c.x = Math.random() * w;
+      }
+    }
+  }
+
+  // 高度に応じたレイリー散乱グラデーション・太陽ゴッドレイ・レンズフレア描画
+  drawSky(ctx, w, h, altitude, time) {
+    const ratio = clamp(altitude / CONFIG.TARGET_ALTITUDE, 0, 1);
+
+    // 高度フェーズに応じた天頂色・中層色・地平霞色の補間
+    const lerpRGB = (c1, c2, t) => [
+      Math.round(lerp(c1[0], c2[0], t)),
+      Math.round(lerp(c1[1], c2[1], t)),
+      Math.round(lerp(c1[2], c2[2], t))
+    ];
+    const rgbStr = (arr) => `rgb(${arr[0]},${arr[1]},${arr[2]})`;
+
+    let topC, midC, botC;
+    if (ratio < 0.5) {
+      const t = ratio * 2;
+      topC = lerpRGB([68, 142, 228], [22, 62, 148], t);
+      midC = lerpRGB([135, 198, 245], [52, 115, 205], t);
+      botC = lerpRGB([232, 244, 255], [140, 188, 238], t);
+    } else {
+      const t = (ratio - 0.5) * 2;
+      topC = lerpRGB([22, 62, 148], [5, 10, 28], t);
+      midC = lerpRGB([52, 115, 205], [16, 36, 88], t);
+      botC = lerpRGB([140, 188, 238], [56, 98, 168], t);
+    }
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, rgbStr(topC));
+    skyGrad.addColorStop(0.55, rgbStr(midC));
+    skyGrad.addColorStop(1, rgbStr(botC));
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 高高度では星がうっすら瞬く
+    if (ratio > 0.55) {
+      const starAlpha = (ratio - 0.55) / 0.45;
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 45; i++) {
+        const sx = ((i * 193) % 997) / 997 * w;
+        const sy = ((i * 317) % 991) / 991 * (h * 0.65);
+        const tw = 0.3 + 0.7 * Math.sin(time * 3 + i);
+        ctx.globalAlpha = starAlpha * tw * 0.85;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // 太陽と光芒（ゴッドレイ）＆レンズフレア
+    const sunX = w * 0.82;
+    const sunY = h * (0.16 + ratio * 0.12);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+
+    // 太陽ハロー
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, Math.max(w, h) * 0.48);
+    sunGlow.addColorStop(0, 'rgba(255, 252, 235, 0.95)');
+    sunGlow.addColorStop(0.12, 'rgba(255, 230, 175, 0.55)');
+    sunGlow.addColorStop(0.45, 'rgba(255, 195, 120, 0.14)');
+    sunGlow.addColorStop(1, 'rgba(255, 180, 100, 0)');
+    ctx.fillStyle = sunGlow;
+    ctx.fillRect(0, 0, w, h);
+
+    // 回転するゴッドレイ（光芒）
+    ctx.translate(sunX, sunY);
+    for (let r = 0; r < 9; r++) {
+      const ang = (r / 9) * Math.PI * 2 + time * 0.04;
+      const rayGrad = ctx.createLinearGradient(0, 0, Math.cos(ang) * w * 0.9, Math.sin(ang) * w * 0.9);
+      rayGrad.addColorStop(0, 'rgba(255, 248, 220, 0.16)');
+      rayGrad.addColorStop(1, 'rgba(255, 248, 220, 0)');
+      ctx.fillStyle = rayGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, w * 0.95, ang - 0.09, ang + 0.09);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // レンズフレア（太陽と画面中心を結ぶ軸上に配置）
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const vx = cx - sunX;
+    const vy = cy - sunY;
+    const flares = [
+      { t: 0.45, r: 26, c: 'rgba(255, 210, 150, 0.18)' },
+      { t: 0.85, r: 52, c: 'rgba(140, 220, 255, 0.12)' },
+      { t: 1.25, r: 18, c: 'rgba(255, 160, 210, 0.22)' },
+      { t: 1.55, r: 74, c: 'rgba(180, 255, 210, 0.10)' }
+    ];
+    for (const f of flares) {
+      const fx = sunX + vx * f.t;
+      const fy = sunY + vy * f.t;
+      const fg = ctx.createRadialGradient(fx, fy, f.r * 0.1, fx, fy, f.r);
+      fg.addColorStop(0, f.c);
+      fg.addColorStop(0.8, f.c);
+      fg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.arc(fx, fy, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // 地上風景（遠景の山・霞・街並み・草地）の描画（スタート時とクリア演出で使用）
+  drawGround(ctx, w, h, altitude) {
+    // 高度1mあたり3.2px下にスクロール
+    const offsetY = altitude * 3.2;
+    if (offsetY > h + 450) return;
+
+    const baseY = h + offsetY;
+    ctx.save();
+
+    // 1. 遠景の青い山並み（空気遠近法で霞がかかった表現）
+    ctx.fillStyle = 'rgba(115, 152, 196, 0.65)';
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 40) {
+      const mh = 180 + Math.sin(x * 0.006) * 65 + Math.cos(x * 0.015) * 35;
+      ctx.lineTo(x, baseY - mh);
+    }
+    ctx.lineTo(w, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. 中景の山並み
+    ctx.fillStyle = 'rgba(78, 118, 152, 0.82)';
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 30) {
+      const mh = 115 + Math.cos(x * 0.009 + 1.2) * 42 + Math.sin(x * 0.022) * 20;
+      ctx.lineTo(x, baseY - mh);
+    }
+    ctx.lineTo(w, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. パリ風の街並みシルエットと屋根
+    const townBase = baseY - 58;
+    for (let i = 0; i < 28; i++) {
+      const bx = (i / 28) * w;
+      const bw = (w / 28) + 6;
+      const bh = 28 + ((i * 37) % 45);
+      ctx.fillStyle = i % 2 === 0 ? '#5c677d' : '#4a5568';
+      ctx.fillRect(bx, townBase - bh, bw, bh);
+
+      // 屋根
+      ctx.fillStyle = '#33415c';
+      ctx.beginPath();
+      ctx.moveTo(bx - 2, townBase - bh);
+      ctx.lineTo(bx + bw * 0.5, townBase - bh - 12);
+      ctx.lineTo(bx + bw + 2, townBase - bh);
+      ctx.closePath();
+      ctx.fill();
+
+      // 窓の明かり
+      ctx.fillStyle = 'rgba(255, 232, 165, 0.55)';
+      for (let wy = townBase - bh + 6; wy < townBase - 6; wy += 9) {
+        for (let wx = bx + 5; wx < bx + bw - 6; wx += 8) {
+          ctx.fillRect(wx, wy, 4, 5);
+        }
+      }
+    }
+
+    // 地平線の白い大気霞レイヤー
+    const hazeGrad = ctx.createLinearGradient(0, baseY - 190, 0, baseY - 30);
+    hazeGrad.addColorStop(0, 'rgba(235, 245, 255, 0)');
+    hazeGrad.addColorStop(0.6, 'rgba(235, 245, 255, 0.42)');
+    hazeGrad.addColorStop(1, 'rgba(235, 245, 255, 0)');
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, baseY - 190, w, 160);
+
+    // 4. 手前の緑豊かな芝生広場
+    const grassGrad = ctx.createLinearGradient(0, baseY - 68, 0, baseY + 40);
+    grassGrad.addColorStop(0, '#588157');
+    grassGrad.addColorStop(0.4, '#3a5a40');
+    grassGrad.addColorStop(1, '#283618');
+    ctx.fillStyle = grassGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY - 58);
+    ctx.quadraticCurveTo(w * 0.5, baseY - 78, w, baseY - 54);
+    ctx.lineTo(w, baseY + 120);
+    ctx.lineTo(0, baseY + 120);
+    ctx.closePath();
+    ctx.fill();
+
+    // 草のディテールブレード
+    ctx.strokeStyle = '#76a065';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 95; i++) {
+      const gx = (i / 95) * w;
+      const gy = baseY - 52 + ((i * 19) % 38);
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.quadraticCurveTo(gx - 3, gy - 8, gx + 2, gy - 13);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  drawClouds(ctx, frontLayer = false) {
+    for (const c of this.clouds) {
+      const isFront = c.parallax >= 0.85;
+      if (isFront !== frontLayer) continue;
+
+      const sp = this.cloudSprites[c.spriteIdx];
+      const dw = sp.width * c.scale;
+      const dh = sp.height * c.scale;
+
+      ctx.save();
+      ctx.globalAlpha = c.alpha;
+      ctx.drawImage(sp, c.x + c.dispX - dw * 0.5, c.y + c.dispY - dh * 0.5, dw, dh);
+      ctx.restore();
+    }
+  }
+}
+
+/**
+ * ============================================================================
+ * 7. 敵キャラクター＆ジャム瓶 (Crow, Airplane, JamJar)
+ * ============================================================================
+ */
+class Crow {
+  constructor(w, h, speedMultiplier = 1) {
+    this.fromLeft = Math.random() < 0.5;
+    this.x = this.fromLeft ? -90 : w + 90;
+    this.y = 60 + Math.random() * (h * 0.65);
+
+    const targetX = w * (0.25 + Math.random() * 0.5);
+    const targetY = this.y + 80 + Math.random() * 180;
+    const angle = Math.atan2(targetY - this.y, targetX - this.x);
+    const speed = (220 + Math.random() * 120) * speedMultiplier;
+
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.wingPhase = Math.random() * Math.PI * 2;
+    this.warnTime = 0.65; // 画面外予告マーカー表示時間
+    this.hasBitten = false;
+    this.scared = false;
+    this.rot = 0;
+    this.scale = 0.88 + Math.random() * 0.24;
+  }
+
+  update(dt, time) {
+    if (this.warnTime > 0) {
+      this.warnTime -= dt;
+      if (this.warnTime <= 0) AUDIO.playCrowCaw();
+      return;
+    }
+
+    this.wingPhase += (this.scared ? 24 : 13) * dt;
+    this.x += this.vx * dt;
+    this.y += (this.vy + Math.sin(this.wingPhase) * 35) * dt;
+
+    if (this.scared) {
+      this.rot += 12 * dt;
+    }
+  }
+
+  draw(ctx, w, h) {
+    // 突入前の警告マーカー
+    if (this.warnTime > 0) {
+      const wx = this.fromLeft ? 28 : w - 28;
+      const wy = clamp(this.y, 40, h - 40);
+      const pulse = 0.5 + 0.5 * Math.sin(this.warnTime * 28);
+      ctx.save();
+      ctx.translate(wx, wy);
+      ctx.fillStyle = `rgba(255, 65, 54, ${0.5 + pulse * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, 16 + pulse * 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', 0, 1);
+      ctx.restore();
+      return;
+    }
+
+    const dir = this.vx >= 0 ? 1 : -1;
+    const tilt = clamp(this.vy * 0.0012, -0.35, 0.35) * dir;
+    const flap = Math.sin(this.wingPhase);
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.scale(dir * this.scale, this.scale);
+    ctx.rotate(this.scared ? this.rot : tilt);
+
+    // 1. 奥の翼
+    this.drawWing(ctx, flap * 0.85 - 0.15, true);
+
+    // 2. 尾羽（扇状に広がる羽根）
+    ctx.fillStyle = '#111420';
+    for (let t = -2; t <= 2; t++) {
+      ctx.save();
+      ctx.rotate(t * 0.09);
+      ctx.beginPath();
+      ctx.ellipse(-28, 2, 14, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 3. 胴体（青紫の構造色光沢グラデーション）
+    const bodyGrad = ctx.createLinearGradient(-15, -14, 15, 14);
+    bodyGrad.addColorStop(0, '#2b3252'); // 青紫の光沢
+    bodyGrad.addColorStop(0.45, '#151828');
+    bodyGrad.addColorStop(1, '#090a10');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 22, 10.5, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. 頭部
+    ctx.fillStyle = '#181c2e';
+    ctx.beginPath();
+    ctx.arc(19, -4, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. 鋭い湾曲した黒いくちばし
+    const beakGrad = ctx.createLinearGradient(24, -8, 39, -1);
+    beakGrad.addColorStop(0, '#495066');
+    beakGrad.addColorStop(1, '#11131a');
+    ctx.fillStyle = beakGrad;
+    ctx.beginPath();
+    ctx.moveTo(24, -8);
+    ctx.quadraticCurveTo(35, -8, 40, -2);
+    ctx.lineTo(25, -1);
+    ctx.closePath();
+    ctx.fill();
+
+    // 6. 鋭い目（驚いた時は目が丸く飛び出る）
+    if (this.scared) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(22, -5, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(23, -5, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#f8f9fa';
+      ctx.beginPath();
+      ctx.arc(22, -5.2, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0b0c10';
+      ctx.beginPath();
+      ctx.arc(22.6, -5.2, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 7. 手前の翼（風切羽1枚1枚の動きを表現）
+    this.drawWing(ctx, flap, false);
+
+    ctx.restore();
+  }
+
+  drawWing(ctx, flapVal, isBack) {
+    ctx.save();
+    const wingY = flapVal * 26;
+    ctx.fillStyle = isBack ? '#0d0f18' : '#1f2542';
+    ctx.beginPath();
+    ctx.moveTo(-4, 0);
+    ctx.quadraticCurveTo(6, -wingY * 0.65, 2, -wingY);
+    ctx.quadraticCurveTo(-14, -wingY * 0.8, -18, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 初列風切羽の1枚1枚の羽根を描画
+    const feathers = 6;
+    for (let i = 0; i < feathers; i++) {
+      const fAngle = (i / feathers) * 0.65 - 0.3 + flapVal * 0.25;
+      const fx = -2 - i * 3.1;
+      const fy = -wingY * (1 - i * 0.11);
+      ctx.save();
+      ctx.translate(fx, fy);
+      ctx.rotate(fAngle);
+      ctx.fillStyle = isBack ? '#090b12' : (i % 2 === 0 ? '#283054' : '#161a2e');
+      ctx.beginPath();
+      ctx.ellipse(-6, 0, 9.5, 2.2, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+
+class Airplane {
+  constructor(w, h, speedMultiplier = 1) {
+    this.isJet = Math.random() < 0.55; // true: 旅客機, false: 小型プロペラ機
+    this.fromLeft = Math.random() < 0.5;
+    this.x = this.fromLeft ? -180 : w + 180;
+    this.y = 80 + Math.random() * (h * 0.62);
+
+    const speed = (this.isJet ? 440 : 300) * speedMultiplier;
+    const angle = this.fromLeft
+      ? (Math.random() * 0.28 - 0.08)
+      : (Math.PI - (Math.random() * 0.28 - 0.08));
+
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.warnTime = 0.95;
+    this.soundPlayed = false;
+    this.hasBitten = false;
+    this.scared = false;
+    this.rot = 0;
+    this.contrails = [];
+  }
+
+  update(dt, climbPixels) {
+    if (this.warnTime > 0) {
+      this.warnTime -= dt;
+      if (this.warnTime <= 0 && !this.soundPlayed) {
+        this.soundPlayed = true;
+        AUDIO.playAirplanePass(this.isJet);
+      }
+      return;
+    }
+
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+
+    if (this.scared) {
+      this.rot += 9 * dt;
+    }
+
+    // 飛行機雲（コントレイル）生成
+    const dir = this.vx >= 0 ? 1 : -1;
+    this.contrails.push({
+      x: this.x - dir * 55,
+      y: this.y + 4,
+      r: this.isJet ? 7 : 4,
+      alpha: 0.55
+    });
+
+    for (let i = this.contrails.length - 1; i >= 0; i--) {
+      const c = this.contrails[i];
+      c.y += climbPixels * 0.6 * dt;
+      c.r += 18 * dt;
+      c.alpha -= 0.42 * dt;
+      if (c.alpha <= 0) this.contrails.splice(i, 1);
+    }
+  }
+
+  draw(ctx, w, h, time) {
+    // 画面外からの接近警告マーカー
+    if (this.warnTime > 0) {
+      const wx = this.fromLeft ? 34 : w - 34;
+      const wy = clamp(this.y, 50, h - 50);
+      const pulse = 0.5 + 0.5 * Math.sin(this.warnTime * 34);
+      ctx.save();
+      ctx.translate(wx, wy);
+      ctx.fillStyle = `rgba(255, 165, 0, ${0.6 + pulse * 0.4})`;
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.lineTo(17, 13);
+      ctx.lineTo(-17, 13);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✈', 0, 9);
+      ctx.restore();
+      return;
+    }
+
+    // 1. 飛行機雲描画
+    ctx.save();
+    for (const c of this.contrails) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${clamp(c.alpha, 0, 1)})`;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    const dir = this.vx >= 0 ? 1 : -1;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.scale(dir, 1);
+    ctx.rotate(this.scared ? this.rot : (this.vy * 0.0006 * dir));
+
+    if (this.isJet) {
+      // --- リアルな旅客機 ---
+      // 奥の主翼
+      ctx.fillStyle = '#9aa5b8';
+      ctx.beginPath();
+      ctx.moveTo(-8, -2);
+      ctx.lineTo(-26, -24);
+      ctx.lineTo(-16, -24);
+      ctx.lineTo(12, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 垂直尾翼
+      const tailGrad = ctx.createLinearGradient(-56, -30, -34, 0);
+      tailGrad.addColorStop(0, '#1d4ed8');
+      tailGrad.addColorStop(1, '#1e3a8a');
+      ctx.fillStyle = tailGrad;
+      ctx.beginPath();
+      ctx.moveTo(-40, -2);
+      ctx.lineTo(-58, -28);
+      ctx.lineTo(-47, -28);
+      ctx.lineTo(-28, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      // メタリックな機体胴体（円筒シェーディング）
+      const bodyGrad = ctx.createLinearGradient(0, -13, 0, 13);
+      bodyGrad.addColorStop(0, '#ffffff');
+      bodyGrad.addColorStop(0.55, '#e2e8f0');
+      bodyGrad.addColorStop(0.85, '#94a3b8');
+      bodyGrad.addColorStop(1, '#cbd5e1');
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.moveTo(-52, -4);
+      ctx.lineTo(36, -10);
+      ctx.quadraticCurveTo(58, -9, 64, 0);
+      ctx.quadraticCurveTo(56, 10, 34, 10);
+      ctx.lineTo(-52, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // コックピット窓
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(46, -6);
+      ctx.lineTo(56, -2);
+      ctx.lineTo(45, -1);
+      ctx.closePath();
+      ctx.fill();
+
+      // 客室窓の列
+      ctx.fillStyle = '#1e293b';
+      for (let wx = -28; wx <= 32; wx += 6.5) {
+        ctx.beginPath();
+        ctx.ellipse(wx, -2.5, 1.5, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 手前の主翼とジェットエンジンポッド
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.moveTo(-6, 3);
+      ctx.lineTo(-28, 26);
+      ctx.lineTo(-14, 26);
+      ctx.lineTo(16, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.ellipse(-2, 14, 9, 4.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // --- 小型プロペラ機（セスナ風） ---
+      // 尾翼
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.moveTo(-34, -2);
+      ctx.lineTo(-44, -18);
+      ctx.lineTo(-35, -18);
+      ctx.lineTo(-24, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 胴体
+      const propGrad = ctx.createLinearGradient(0, -10, 0, 10);
+      propGrad.addColorStop(0, '#fef2f2');
+      propGrad.addColorStop(0.6, '#fca5a5');
+      propGrad.addColorStop(1, '#dc2626');
+      ctx.fillStyle = propGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 38, 9.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // キャノピー窓
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(10, -3, 7, Math.PI, 0);
+      ctx.fill();
+
+      // 高翼
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(-12, -11, 28, 3.5);
+
+      // 高速回転するプロペラブレード残像
+      ctx.strokeStyle = 'rgba(220, 230, 245, 0.75)';
+      ctx.lineWidth = 2.5;
+      const pLen = 16 * Math.sin(time * 55);
+      ctx.beginPath();
+      ctx.moveTo(39, -pLen);
+      ctx.lineTo(39, pLen);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
+
+class JamJar {
+  constructor(w) {
+    this.flavor = Math.random() < 0.5 ? 'strawberry' : 'blueberry';
+    this.x = 60 + Math.random() * (w - 120);
+    this.y = -50;
+    this.vy = 135;
+    this.baseX = this.x;
+    this.phase = Math.random() * Math.PI * 2;
+  }
+
+  update(dt, time) {
+    this.y += this.vy * dt;
+    this.x = this.baseX + Math.sin(time * 2.6 + this.phase) * 28;
+  }
+
+  draw(ctx, time) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(Math.sin(time * 3 + this.phase) * 0.14);
+
+    // 後光オーラ
+    const aura = ctx.createRadialGradient(0, 0, 4, 0, 0, 36);
+    aura.addColorStop(0, this.flavor === 'strawberry' ? 'rgba(255, 80, 120, 0.65)' : 'rgba(130, 80, 255, 0.65)');
+    aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(0, 0, 36, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ガラス瓶本体
+    ctx.fillStyle = 'rgba(240, 248, 255, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(-14, -14, 28, 32, 6);
+    ctx.fill();
+
+    // 中身のジャム
+    ctx.fillStyle = this.flavor === 'strawberry' ? '#e11d48' : '#4c1d95';
+    ctx.beginPath();
+    ctx.roundRect(-11.5, -8, 23, 23.5, 4);
+    ctx.fill();
+
+    // ラベル
+    ctx.fillStyle = '#fef3c7';
+    ctx.fillRect(-10, -2, 20, 11);
+    ctx.fillStyle = this.flavor === 'strawberry' ? '#e11d48' : '#4c1d95';
+    ctx.beginPath();
+    ctx.arc(0, 3.5, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ギンガムチェック風ボンネット蓋
+    ctx.fillStyle = this.flavor === 'strawberry' ? '#fb7185' : '#a78bfa';
+    ctx.beginPath();
+    ctx.roundRect(-15, -19, 30, 6.5, 3);
+    ctx.fill();
+
+    // ガラスのハイライト
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.fillRect(-9, -11, 3, 24);
+
+    ctx.restore();
+  }
+}
+
+/**
+ * ============================================================================
+ * 8. クリア演出用・超リアルな鳩 (Pigeon)
+ * ============================================================================
+ */
+class Pigeon {
+  constructor(startX, groundY) {
+    this.x = startX;
+    this.y = groundY;
+    this.walkCycle = Math.random() * Math.PI * 2;
+    this.peckPhase = 0;
+    this.dir = 1;
+    this.scale = 0.92 + Math.random() * 0.16;
+  }
+
+  update(dt, crumbs) {
+    // 最も近いパンの欠片を探す
+    let nearest = null;
+    let minDist = Infinity;
+    for (const c of crumbs) {
+      if (c.size <= 0.2) continue;
+      const d = Math.abs(c.x - this.x);
+      if (d < minDist) {
+        minDist = d;
+        nearest = c;
+      }
+    }
+
+    if (!nearest) return;
+
+    this.dir = nearest.x >= this.x ? 1 : -1;
+
+    if (minDist > 26) {
+      // 首をカクカク前後に振りながら歩く鳩特有の歩行モーション
+      this.walkCycle += 11 * dt;
+      const speed = 78 * (0.6 + 0.4 * Math.sin(this.walkCycle * 2));
+      this.x += this.dir * speed * dt;
+      this.peckPhase = lerp(this.peckPhase, 0, 10 * dt);
+    } else {
+      // 欠片をつついて食べるモーション
+      const prevSin = Math.sin(this.peckPhase);
+      this.peckPhase += 19 * dt;
+      const curSin = Math.sin(this.peckPhase);
+      if (prevSin < 0.85 && curSin >= 0.85) {
+        nearest.size = Math.max(0, nearest.size - 1.35);
+        AUDIO.playCrunch(false);
+      }
+    }
+  }
+
+  draw(ctx) {
+    // 歩行時の首のカクカク前後変位と、つつき時の前傾角度
+    const headBob = Math.sin(this.walkCycle * 2) * 3.8;
+    const peckDown = Math.max(0, Math.sin(this.peckPhase)) * 0.72;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.scale(this.dir * this.scale, this.scale);
+
+    // 地面の影
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 18, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 赤ピンク色の脚
+    const legSwing = Math.sin(this.walkCycle) * 5;
+    ctx.strokeStyle = '#d94862';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-2, -10);
+    ctx.lineTo(-2 + legSwing, 0);
+    ctx.moveTo(3, -10);
+    ctx.lineTo(3 - legSwing, 0);
+    ctx.stroke();
+
+    // つつく動作で胴体と首が前傾する
+    ctx.translate(0, -14);
+    ctx.rotate(peckDown);
+
+    // 尾羽（先端に黒いバンド）
+    ctx.fillStyle = '#6c757d';
+    ctx.beginPath();
+    ctx.moveTo(-12, 2);
+    ctx.lineTo(-29, 7);
+    ctx.lineTo(-27, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#212529';
+    ctx.fillRect(-26, 2, 4, 5);
+
+    // 丸みのある灰青色の胴体
+    ctx.fillStyle = '#8d99ae';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16, 10.5, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 翼と特徴的な2本の黒い翼帯（ツーバー）
+    ctx.fillStyle = '#adb5bd';
+    ctx.beginPath();
+    ctx.ellipse(-2, -1, 12, 7.5, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#212529';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-4, -6);
+    ctx.lineTo(-6, 4);
+    ctx.moveTo(-9, -5);
+    ctx.lineTo(-11, 3);
+    ctx.stroke();
+
+    // 虹色（エメラルドグリーン〜マゼンタ）に輝く首の羽毛
+    const neckX = 11 + headBob * 0.6;
+    const neckY = -7;
+    const iridGrad = ctx.createLinearGradient(neckX - 5, neckY - 6, neckX + 5, neckY + 6);
+    iridGrad.addColorStop(0, '#10b981');   // 構造色グリーン
+    iridGrad.addColorStop(0.5, '#a855f7'); // 構造色パープル
+    iridGrad.addColorStop(1, '#ec4899');   // 構造色マゼンタ
+    ctx.fillStyle = iridGrad;
+    ctx.beginPath();
+    ctx.ellipse(neckX, neckY, 6.2, 8.5, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 頭部
+    const headX = 13 + headBob;
+    const headY = -14;
+    ctx.fillStyle = '#6c757d';
+    ctx.beginPath();
+    ctx.arc(headX, headY, 6.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // くちばしと白い鼻こぶ（蠟膜）
+    ctx.fillStyle = '#343a40';
+    ctx.beginPath();
+    ctx.moveTo(headX + 5, headY - 2);
+    ctx.lineTo(headX + 12, headY + 1);
+    ctx.lineTo(headX + 5, headY + 2.5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#f8f9fa';
+    ctx.beginPath();
+    ctx.ellipse(headX + 5.8, headY - 1.2, 2.2, 1.5, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // オレンジ色のリアルな虹彩の目
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.arc(headX + 2, headY - 1.5, 2.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(headX + 2.2, headY - 1.5, 1.0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+/**
+ * ============================================================================
+ * 9. メインゲームコントローラー＆シネマティック演出 (Game)
+ * ============================================================================
+ */
+const CREDITS_LIST = [
+  { role: "A FILM BY", name: "LA BOULANGERIE DU CIEL" },
+  { role: "MADE BY", name: "Gemini" },
+  { role: "CREATED BY", name: "Gemini" },
+  { role: "DIRECTED BY", name: "Gemini" },
+  { role: "LEAD BAGUETTE ARTISAN", name: "Maître Farine & Eau" },
+  { role: "PROCEDURAL CRUST & CRUMB ENGINE", name: "HTML5 Canvas 2D Shader" },
+  { role: "AERODYNAMICS & BUTTER PHYSICS", name: "Docteur Croissant" },
+  { role: "SPECIAL THANKS", name: "お腹を空かせたカラスたち" },
+  { role: "SPECIAL THANKS", name: "進路を譲らない飛行機たち" },
+  { role: "SPECIAL THANKS", name: "無敵の輝きをくれたイチゴ＆ブルーベリージャム" },
+  { role: "AND YOU", name: "空を見上げたすべてのパン好きへ" }
+];
+
+class Game {
+  constructor() {
+    this.canvas = document.getElementById('gameCanvas');
+    this.ctx = this.canvas.getContext('2d');
+
+    this.hudEl = document.getElementById('hud');
+    this.altValEl = document.getElementById('alt-val');
+    this.altBarEl = document.getElementById('alt-bar');
+    this.breadValEl = document.getElementById('bread-val');
+    this.breadBarEl = document.getElementById('bread-bar');
+    this.jamWrapEl = document.getElementById('jam-gauge-wrap');
+    this.jamBarEl = document.getElementById('jam-bar');
+
+    this.startScreen = document.getElementById('start-screen');
+    this.gameoverScreen = document.getElementById('gameover-screen');
+    this.clearScreen = document.getElementById('clear-screen');
+
+    this.env = new Environment();
+    this.baguette = new Baguette();
+    this.particles = new ParticleSystem();
+
+    this.state = 'TITLE'; // TITLE, PLAYING, CREDITS, REWIND, PIGEONS, CLEAR, GAMEOVER
+    this.altitude = 0;
+    this.time = 0;
+    this.stateTimer = 0;
+
+    this.enemies = [];
+    this.jams = [];
+    this.enemySpawnTimer = 0;
+    this.jamSpawnTimer = 6;
+
+    // 映画風エンドロール・逆再生・鳩フェーズ用ワーク変数
+    this.creditScroll = 0;
+    this.afterimages = [];
+    this.groundCrumbs = [];
+    this.pigeons = [];
+    this.clearFade = 0;
+
+    this.input = {
+      targetX: window.innerWidth * 0.5,
+      targetY: window.innerHeight * 0.68,
+      kx: 0,
+      ky: 0,
+      hasKeyInput: false,
+      keys: {}
+    };
+
+    this.resize();
+    this.env.initClouds(this.canvas.width, this.canvas.height);
+    this.bindEvents();
+
+    this.lastTime = performance.now();
+    requestAnimationFrame((t) => this.loop(t));
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  bindEvents() {
+    window.addEventListener('resize', () => this.resize());
+
+    // マウス追従
+    window.addEventListener('mousemove', (e) => {
+      this.input.targetX = e.clientX;
+      this.input.targetY = e.clientY;
+    });
+
+    // タッチドラッグ追従
+    window.addEventListener('touchstart', (e) => {
+      AUDIO.init();
+      if (e.touches.length > 0) {
+        this.input.targetX = e.touches[0].clientX;
+        this.input.targetY = e.touches[0].clientY - 36;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        this.input.targetX = e.touches[0].clientX;
+        this.input.targetY = e.touches[0].clientY - 36;
+      }
+    }, { passive: true });
+
+    // キーボード (WASD / 矢印キー)
+    window.addEventListener('keydown', (e) => {
+      this.input.keys[e.code] = true;
+      this.updateKeyVector();
+    });
+    window.addEventListener('keyup', (e) => {
+      this.input.keys[e.code] = false;
+      this.updateKeyVector();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => this.startGame());
+    document.getElementById('retry-btn').addEventListener('click', () => this.startGame());
+    document.getElementById('replay-btn').addEventListener('click', () => this.startGame());
+  }
+
+  updateKeyVector() {
+    const k = this.input.keys;
+    let kx = 0, ky = 0;
+    if (k['ArrowLeft'] || k['KeyA']) kx -= 1;
+    if (k['ArrowRight'] || k['KeyD']) kx += 1;
+    if (k['ArrowUp'] || k['KeyW']) ky -= 1;
+    if (k['ArrowDown'] || k['KeyS']) ky += 1;
+    this.input.kx = kx;
+    this.input.ky = ky;
+    this.input.hasKeyInput = (kx !== 0 || ky !== 0);
+  }
+
+  startGame() {
+    AUDIO.startBGM();
+    this.startScreen.classList.add('hidden');
+    this.gameoverScreen.classList.add('hidden');
+    this.clearScreen.classList.add('hidden');
+    this.hudEl.classList.add('visible');
+
+    this.altitude = 0;
+    this.stateTimer = 0;
+    this.enemies = [];
+    this.jams = [];
+    this.particles.particles = [];
+    this.afterimages = [];
+    this.enemySpawnTimer = 1.0;
+    this.jamSpawnTimer = 5.5;
+
+    this.baguette.reset();
+    this.baguette.x = this.canvas.width * 0.5;
+    this.baguette.y = this.canvas.height * 0.68;
+    this.input.targetX = this.baguette.x;
+    this.input.targetY = this.baguette.y;
+
+    this.state = 'PLAYING';
+  }
+
+  // メインのゲームプレイ更新
+  updatePlaying(dt) {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+
+    // 高度上昇（パンが軽くなるほど上昇気流に乗って少し速く昇る）
+    const lightFactor = lerp(1.35, 1.0, this.baguette.remainingPercent / 100);
+    const climbRate = CONFIG.BASE_CLIMB_SPEED * lightFactor;
+    this.altitude += climbRate * dt;
+
+    // パンの移動更新
+    this.baguette.update(dt, this.input, w, h);
+
+    // 雲とパーティクルの更新
+    const colliders = [{ x: this.baguette.x, y: this.baguette.y }, ...this.enemies];
+    this.env.updateClouds(dt, climbRate * 3.1, w, h, colliders);
+    this.particles.update(dt, climbRate * 2.2);
+
+    // 高度に応じた敵スポーン制御（高いほど数と速度が増す）
+    const progress = clamp(this.altitude / CONFIG.TARGET_ALTITUDE, 0, 1);
+    this.enemySpawnTimer -= dt;
+    if (this.enemySpawnTimer <= 0) {
+      const interval = lerp(1.35, 0.42, progress);
+      this.enemySpawnTimer = interval * (0.75 + Math.random() * 0.5);
+
+      const speedMult = 1.0 + progress * 0.85;
+      // 高度400m以上から飛行機が混ざり始める
+      if (this.altitude > 380 && Math.random() < lerp(0.18, 0.48, progress)) {
+        this.enemies.push(new Airplane(w, h, speedMult));
+      } else {
+        // カラスは時々2〜3羽の群れで突っ込んでくる
+        const flock = Math.random() < 0.32 ? 2 : 1;
+        for (let f = 0; f < flock; f++) {
+          this.enemies.push(new Crow(w, h, speedMult));
+        }
+      }
+    }
+
+    // ジャム瓶の出現制御
+    this.jamSpawnTimer -= dt;
+    if (this.jamSpawnTimer <= 0) {
+      this.jamSpawnTimer = 10 + Math.random() * 6;
+      this.jams.push(new JamJar(w));
+    }
+
+    // ジャム瓶の当たり判定
+    for (let i = this.jams.length - 1; i >= 0; i--) {
+      const j = this.jams[i];
+      j.update(dt, this.time);
+      const col = this.baguette.checkCollisionCircle(j.x, j.y, 26);
+      if (col.hit) {
+        this.baguette.jamTime = CONFIG.JAM_DURATION;
+        this.baguette.jamColor = j.flavor;
+        AUDIO.playJamPowerup();
+        this.jams.splice(i, 1);
+        continue;
+      }
+      if (j.y > h + 80) this.jams.splice(i, 1);
+    }
+
+    // 敵（カラス・飛行機）の移動＆齧り判定
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const e = this.enemies[i];
+      const isPlane = e instanceof Airplane;
+      e.update(dt, isPlane ? climbRate * 3.1 : this.time);
+
+      if (e.warnTime <= 0 && !e.hasBitten && !e.scared) {
+        const hitRadius = isPlane ? 32 : 18;
+        const col = this.baguette.checkCollisionCircle(e.x, e.y, hitRadius);
+        if (col.hit) {
+          if (this.baguette.jamTime > 0) {
+            // 無敵状態：敵が驚いて吹き飛び逃げていく！
+            e.scared = true;
+            const dx = e.x - this.baguette.x;
+            const dy = e.y - this.baguette.y;
+            const len = Math.max(1, Math.hypot(dx, dy));
+            e.vx = (dx / len) * 680;
+            e.vy = (dy / len) * 680 - 180;
+            AUDIO.playBoing();
+            if (!isPlane) this.particles.spawnFeather(e.x, e.y);
+          } else {
+            // 通常状態：当たった位置がリアルな歯形・くちばし形で齧り取られる
+            e.hasBitten = true;
+            const biteR = isPlane ? CONFIG.PLANE_BITE_RADIUS : CONFIG.CROW_BITE_RADIUS;
+            this.baguette.biteAtWorld(col.x, col.y, biteR, this.particles);
+            AUDIO.playCrunch(isPlane);
+          }
+        }
+      }
+
+      if (e.x < -300 || e.x > w + 300 || e.y < -300 || e.y > h + 300) {
+        this.enemies.splice(i, 1);
+      }
+    }
+
+    // HUD更新
+    this.altValEl.textContent = Math.min(CONFIG.TARGET_ALTITUDE, Math.floor(this.altitude));
+    this.altBarEl.style.width = `${clamp((this.altitude / CONFIG.TARGET_ALTITUDE) * 100, 0, 100)}%`;
+    this.breadValEl.textContent = Math.ceil(this.baguette.remainingPercent);
+    this.breadBarEl.style.width = `${this.baguette.remainingPercent}%`;
+
+    if (this.baguette.jamTime > 0) {
+      this.jamWrapEl.style.display = 'block';
+      this.jamBarEl.style.width = `${(this.baguette.jamTime / CONFIG.JAM_DURATION) * 100}%`;
+    } else {
+      this.jamWrapEl.style.display = 'none';
+    }
+
+    // ゲームオーバー判定
+    if (this.baguette.remainingPercent < CONFIG.MIN_BREAD_PERCENT) {
+      this.state = 'GAMEOVER';
+      this.hudEl.classList.remove('visible');
+      document.getElementById('gameover-stats').textContent = `到達高度: ${Math.floor(this.altitude)} m`;
+      this.gameoverScreen.classList.remove('hidden');
+      AUDIO.stopBGM();
+      return;
+    }
+
+    // 目標高度クリア判定 -> クリア演出1（映画風エンドロール）へ遷移
+    if (this.altitude >= CONFIG.TARGET_ALTITUDE) {
+      this.altitude = CONFIG.TARGET_ALTITUDE;
+      this.state = 'CREDITS';
+      this.stateTimer = 0;
+      this.creditScroll = 0;
+      this.enemies = [];
+      this.jams = [];
+      this.baguette.jamTime = 0;
+      this.hudEl.classList.remove('visible');
+    }
+  }
+
+  // クリア演出1: 暗転しながら映画のエンドロール＋小窓で飛び続けるパン
+  updateCredits(dt) {
+    this.stateTimer += dt;
+    this.creditScroll += 54 * dt;
+    this.env.updateClouds(dt, 180, this.canvas.width, this.canvas.height, []);
+
+    // エンドロールが一定進んだら、突然パンが急降下＆時間逆行を開始！
+    if (this.stateTimer >= CONFIG.CREDITS_DURATION) {
+      this.state = 'REWIND';
+      this.stateTimer = 0;
+      AUDIO.rewindMode = true;
+      AUDIO.playRewindSweep();
+      this.baguette.x = this.canvas.width * 0.5;
+      this.baguette.y = this.canvas.height * 0.38;
+      this.baguette.angle = 0;
+    }
+  }
+
+  // クリア演出2: 時間巻き戻り・文字の逆再生・パンが砕けながら地上へ急降下
+  updateRewind(dt) {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    this.stateTimer += dt;
+    const progress = clamp(this.stateTimer / CONFIG.REWIND_DURATION, 0, 1);
+
+    // 高度が3000mから0mへ猛スピードで巻き戻る
+    this.altitude = lerp(CONFIG.TARGET_ALTITUDE, 0, Math.pow(progress, 1.15));
+    // エンドロールの文字も逆再生で下へ巻き戻る
+    this.creditScroll -= 195 * dt;
+
+    // 雲も下から上へ逆流
+    this.env.updateClouds(dt, -750, w, h, []);
+
+    // パンが激しく揺れながら少しずつ砕けて小さくなっていく
+    this.baguette.x = w * 0.5 + Math.sin(this.time * 28) * 18 * (1 - progress * 0.5);
+    this.baguette.y = lerp(h * 0.35, h - 42, Math.pow(progress, 1.4));
+    this.baguette.angle = Math.sin(this.time * 16) * 0.45;
+
+    if (Math.random() < 0.42 && this.baguette.remainingPercent > 12) {
+      const rx = this.baguette.x + (Math.random() - 0.5) * 40;
+      const ry = this.baguette.y + (Math.random() - 0.5) * 90;
+      this.baguette.biteAtWorld(rx, ry, 20, this.particles);
+    }
+
+    // 残像履歴を記録
+    this.afterimages.push({
+      x: this.baguette.x,
+      y: this.baguette.y,
+      angle: this.baguette.angle,
+      alpha: 0.55
+    });
+    for (let i = this.afterimages.length - 1; i >= 0; i--) {
+      this.afterimages[i].alpha -= 1.8 * dt;
+      if (this.afterimages[i].alpha <= 0) this.afterimages.splice(i, 1);
+    }
+
+    this.particles.update(dt, -450);
+
+    // 地面に着地したら鳩フェーズへ遷移
+    if (progress >= 1.0) {
+      this.altitude = 0;
+      this.state = 'PIGEONS';
+      this.stateTimer = 0;
+      AUDIO.stopBGM();
+      AUDIO.playCrunch(true);
+
+      // 地面（草地の上）に最後に残ったパンの欠片を配置
+      const groundY = h - 34;
+      this.groundCrumbs = [];
+      for (let i = 0; i < 9; i++) {
+        this.groundCrumbs.push({
+          x: w * 0.5 + (i - 4) * 16 + (Math.random() - 0.5) * 8,
+          y: groundY + (Math.random() - 0.5) * 6,
+          size: 7.5 + Math.random() * 4.5,
+          isCrust: i % 2 === 0
+        });
+      }
+
+      // 左右からリアルな鳩たちが集まってくる
+      this.pigeons = [
+        new Pigeon(w * 0.5 - 240, groundY),
+        new Pigeon(w * 0.5 - 155, groundY + 4),
+        new Pigeon(w * 0.5 + 165, groundY + 2),
+        new Pigeon(w * 0.5 + 255, groundY - 2),
+        new Pigeon(w * 0.5 + 95, groundY + 5)
+      ];
+      AUDIO.playFlap(350);
+    }
+  }
+
+  // クリア演出3: 地面に着地した欠片を鳩たちが集まってつついて完食する
+  updatePigeons(dt) {
+    this.stateTimer += dt;
+    this.env.updateClouds(dt, 0, this.canvas.width, this.canvas.height, []);
+
+    for (const p of this.pigeons) {
+      p.update(dt, this.groundCrumbs);
+    }
+
+    const remainingCrumbs = this.groundCrumbs.some(c => c.size > 0.2);
+    if (!remainingCrumbs) {
+      this.clearFade += 0.55 * dt;
+      if (this.clearFade >= 1.0) {
+        this.state = 'CLEAR';
+        this.clearScreen.classList.remove('hidden');
+      }
+    }
+  }
+
+  // エンドロールのテキストと小窓ワイプを描画
+  drawCreditsOverlay(ctx, w, h, isRewind = false) {
+    const darkAlpha = isRewind ? 0.55 : clamp(this.stateTimer / 3.0, 0, 0.88);
+    ctx.fillStyle = `rgba(6, 8, 14, ${darkAlpha})`;
+    ctx.fillRect(0, 0, w, h);
+
+    // 背景の小窓（Picture-in-Picture）で飛び続けるパンの映像を流す
+    if (!isRewind) {
+      const pw = Math.min(260, w * 0.32);
+      const ph = pw * 1.25;
+      const px = w * 0.5 - pw * 0.5;
+      const py = 36;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(px, py, pw, ph, 10);
+      ctx.clip();
+
+      // 小窓内の成層圏スカイ
+      const g = ctx.createLinearGradient(0, py, 0, py + ph);
+      g.addColorStop(0, '#070d24');
+      g.addColorStop(1, '#1d3c78');
+      ctx.fillStyle = g;
+      ctx.fillRect(px, py, pw, ph);
+
+      this.baguette.x = px + pw * 0.5 + Math.sin(this.time * 1.8) * 14;
+      this.baguette.y = py + ph * 0.54 + Math.cos(this.time * 2.3) * 8;
+      this.baguette.angle = Math.sin(this.time * 1.8) * 0.12;
+      this.baguette.draw(ctx, this.time, 0.52);
+
+      ctx.strokeStyle = 'rgba(255, 235, 195, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, pw, ph);
+      ctx.restore();
+    }
+
+    // 映画風セリフ体のクレジットロール（上下フェードイン・フェードアウトつき）
+    const startY = h * 0.88;
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    CREDITS_LIST.forEach((item, idx) => {
+      const cy = startY + idx * 92 - this.creditScroll;
+      if (cy < 60 || cy > h - 30) return;
+
+      // 画面上下端で滑らかにフェードイン・アウト
+      let alpha = 1.0;
+      if (cy < 220) alpha = clamp((cy - 60) / 160, 0, 1);
+      else if (cy > h - 160) alpha = clamp((h - 30 - cy) / 130, 0, 1);
+
+      ctx.globalAlpha = alpha;
+      ctx.font = 'italic 13px "Georgia", "Times New Roman", serif';
+      ctx.fillStyle = '#d4b483';
+      ctx.fillText(item.role, w * 0.5, cy);
+
+      ctx.font = 'bold 22px "Georgia", "Times New Roman", serif';
+      ctx.fillStyle = '#fff9f0';
+      ctx.fillText(item.name, w * 0.5, cy + 28);
+    });
+    ctx.restore();
+  }
+
+  // 時間巻き戻り時の白褪せ・色収差・フィルムノイズ演出
+  drawRewindEffects(ctx, w, h) {
+    // 残像の描画
+    for (const a of this.afterimages) {
+      ctx.save();
+      ctx.globalAlpha = a.alpha * 0.45;
+      this.baguette.x = a.x;
+      this.baguette.y = a.y;
+      this.baguette.angle = a.angle;
+      this.baguette.draw(ctx, this.time, 0.85);
+      ctx.restore();
+    }
+
+    // 画面全体が薄く白っぽく色褪せるオーバーレイ
+    ctx.fillStyle = 'rgba(245, 248, 255, 0.28)';
+    ctx.fillRect(0, 0, w, h);
+
+    // VHS/フィルム逆再生風の水平ノイズライン
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    for (let i = 0; i < 7; i++) {
+      const ny = ((this.time * 680 + i * 173) % h);
+      ctx.fillRect(0, ny, w, 1.5 + (i % 3));
+    }
+
+    // 巻き戻しインジケーター「◀◀ REWIND」
+    if (Math.sin(this.time * 16) > -0.2) {
+      ctx.save();
+      ctx.font = 'bold 20px "Georgia", serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText('◀◀ REWIND', 36, 48);
+      ctx.restore();
+    }
+  }
+
+  draw() {
+    const ctx = this.ctx;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+
+    // 1. 空・太陽・ゴッドレイ・レンズフレア
+    this.env.drawSky(ctx, w, h, this.altitude, this.time);
+
+    // 2. 奥の雲レイヤー
+    this.env.drawClouds(ctx, false);
+
+    // 3. 地上の街並み・草原・遠景の山
+    this.env.drawGround(ctx, w, h, this.altitude);
+
+    // 4. ゲーム状態別のメインオブジェクト描画
+    if (this.state === 'TITLE' || this.state === 'PLAYING' || this.state === 'GAMEOVER') {
+      for (const j of this.jams) j.draw(ctx, this.time);
+      this.baguette.draw(ctx, this.time, 1.0);
+      for (const e of this.enemies) e.draw(ctx, w, h, this.time);
+      this.particles.draw(ctx);
+      this.env.drawClouds(ctx, true); // 手前の雲（半透明でパンや敵が透ける）
+    } else if (this.state === 'CREDITS') {
+      this.env.drawClouds(ctx, true);
+      this.drawCreditsOverlay(ctx, w, h, false);
+    } else if (this.state === 'REWIND') {
+      const progress = clamp(this.stateTimer / CONFIG.REWIND_DURATION, 0, 1);
+      const scale = lerp(0.85, 0.25, progress);
+      this.drawCreditsOverlay(ctx, w, h, true);
+      this.drawRewindEffects(ctx, w, h);
+      this.baguette.draw(ctx, this.time, scale);
+      this.particles.draw(ctx);
+    } else if (this.state === 'PIGEONS' || this.state === 'CLEAR') {
+      this.env.drawClouds(ctx, true);
+
+      // 地面に落ちたパンの欠片を描画
+      for (const c of this.groundCrumbs) {
+        if (c.size <= 0.2) continue;
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.fillStyle = c.isCrust ? '#b8681e' : '#f5ebd1';
+        ctx.strokeStyle = '#7c3f10';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, c.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 群がるリアルな鳩たちを描画
+      for (const p of this.pigeons) {
+        p.draw(ctx);
+      }
+
+      // 欠片がすべてなくなったら静かに暗転
+      if (this.clearFade > 0) {
+        ctx.fillStyle = `rgba(5, 7, 12, ${clamp(this.clearFade, 0, 0.85)})`;
+        ctx.fillRect(0, 0, w, h);
+      }
+    }
+  }
+
+  loop(now) {
+    const dt = clamp((now - this.lastTime) / 1000, 0.001, 0.05);
+    this.lastTime = now;
+    this.time += dt;
+
+    if (this.state === 'TITLE') {
+      // タイトル画面では背景でパンがゆったり浮遊
+      this.baguette.x = this.canvas.width * 0.5 + Math.sin(this.time * 1.5) * 25;
+      this.baguette.y = this.canvas.height * 0.55 + Math.cos(this.time * 2.0) * 12;
+      this.baguette.angle = Math.sin(this.time * 1.5) * 0.08;
+      this.env.updateClouds(dt, 45, this.canvas.width, this.canvas.height, []);
+    } else if (this.state === 'PLAYING') {
+      this.updatePlaying(dt);
+    } else if (this.state === 'CREDITS') {
+      this.updateCredits(dt);
+    } else if (this.state === 'REWIND') {
+      this.updateRewind(dt);
+    } else if (this.state === 'PIGEONS') {
+      this.updatePigeons(dt);
+    }
+
+    this.draw();
+    requestAnimationFrame((t) => this.loop(t));
+  }
+}
+
+// 起動
+window.addEventListener('DOMContentLoaded', () => {
+  new Game();
+});
+</script>
+</body>
+</html>
